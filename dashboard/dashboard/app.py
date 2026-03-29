@@ -99,7 +99,7 @@ with st.sidebar:
     st.markdown("**Built by**")
     st.markdown("### Chinmay Sawant")
     st.markdown("Data Engineer · Boston, MA")
-    st.markdown("[LinkedIn](#) · [GitHub](#) · [Portfolio](#)")
+    st.markdown("[LinkedIn](https://www.linkedin.com/in/chinmay-sawant-9b79a5192) · [GitHub](https://github.com/Chinmay1220) · [Portfolio](https://csprofile.lovable.app)")
     st.markdown("---")
     st.markdown("**About this dashboard**")
     st.markdown("""
