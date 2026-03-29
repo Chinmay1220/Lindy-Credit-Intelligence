@@ -4,3 +4,4 @@ __pycache__/
 data/lindy_mock.db
 dbt_lindy/target/
 dbt_lindy/logs/
+.streamlit/secrets.toml
