@@ -7,13 +7,13 @@ from datetime import datetime, timedelta
 
 # ── Snowflake Config ─────────────────────────────────────
 SNOWFLAKE_CONFIG = {
-    "account":   "ZVIAMOM-IN09435",
-    "user":      "CSAW",
-    "password":  "Qwertasdfg@1469",
-    "role":      "ACCOUNTADMIN",
-    "warehouse": "COMPUTE_WH",
-    "database":  "LINDY_CREDIT_INTELLIGENCE",
-    "schema":    "RAW",
+    "account":   st.secrets["snowflake"]["account"],
+    "user":      st.secrets["snowflake"]["user"],
+    "password":  st.secrets["snowflake"]["password"],
+    "role":      st.secrets["snowflake"]["role"],
+    "warehouse": st.secrets["snowflake"]["warehouse"],
+    "database":  st.secrets["snowflake"]["database"],
+    "schema":    st.secrets["snowflake"]["schema"],
 }
 
 PLAN_PRICE = {"free": 0, "pro": 49.99, "business": 149.99}
