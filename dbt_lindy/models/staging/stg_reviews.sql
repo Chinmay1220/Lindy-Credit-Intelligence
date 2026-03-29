@@ -6,4 +6,4 @@ select
     complaint_category,
     plan_type,
     review_date
-from raw_reviews
+from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_REVIEWS

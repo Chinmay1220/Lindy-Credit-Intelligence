@@ -2,10 +2,13 @@ dbt_lindy:
   target: dev
   outputs:
     dev:
-      type: sqlite
-      threads: 1
-      database: "lindy_mock"
-      schema: "main"
-      schemas_and_paths:
-        main: "../data/lindy_mock.db"
-      schema_directory: "../data"
+      type: snowflake
+      account: ZVIAMOM-IN09435
+      user: CSAW
+      password: Qwertasdfg@1469
+      role: ACCOUNTADMIN
+      database: LINDY_CREDIT_INTELLIGENCE
+      warehouse: COMPUTE_WH
+      schema: MARTS
+      threads: 4
+      client_session_keep_alive: false

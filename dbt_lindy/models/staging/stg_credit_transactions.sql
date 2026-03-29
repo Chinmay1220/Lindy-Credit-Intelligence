@@ -6,4 +6,4 @@ select
     workflow_type,
     status,
     created_at
-from raw_credit_transactions
+from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_CREDIT_TRANSACTIONS

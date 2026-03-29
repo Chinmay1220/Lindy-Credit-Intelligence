@@ -8,4 +8,4 @@ select
     failure_reason,
     created_at,
     duration_seconds
-from raw_workflow_events
+from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_WORKFLOW_EVENTS

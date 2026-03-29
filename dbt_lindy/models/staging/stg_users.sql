@@ -4,4 +4,4 @@ select
     monthly_credits,
     signup_date,
     country
-from raw_users
+from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_USERS

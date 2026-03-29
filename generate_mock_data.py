@@ -1,139 +1,137 @@
-import sqlite3
+import snowflake.connector
+from snowflake.connector.pandas_tools import write_pandas
 import pandas as pd
 import random
 from datetime import datetime, timedelta
 
-# ── Config ──────────────────────────────────────────────
-DB = "data/lindy_mock.db"
+# ── Snowflake Config ─────────────────────────────────────
+SNOWFLAKE_CONFIG = {
+    "account":   "ZVIAMOM-IN09435",
+    "user":      "CSAW",
+    "password":  "Qwertasdfg@1469",
+    "role":      "ACCOUNTADMIN",
+    "warehouse": "COMPUTE_WH",
+    "database":  "LINDY_CREDIT_INTELLIGENCE",
+    "schema":    "RAW",
+}
+
+# ── Mock Data Config ─────────────────────────────────────
 NUM_USERS = 200
-NUM_DAYS  = 90
 random.seed(42)
 
-PLAN_TYPES       = ["free", "pro", "business"]
-WORKFLOW_TYPES   = ["email_followup", "meeting_summary", "crm_update",
-                    "lead_research", "calendar_scheduling", "document_processing"]
-FAILURE_REASONS  = ["timeout", "api_error", "credit_exhausted",
-                    "invalid_input", "integration_failure"]
-CREDIT_COSTS     = {"email_followup": 10, "meeting_summary": 25,
-                    "crm_update": 15, "lead_research": 40,
-                    "calendar_scheduling": 8, "document_processing": 30}
-PLAN_CREDITS     = {"free": 400, "pro": 5000, "business": 15000}
+PLAN_TYPES     = ["free", "pro", "business"]
+WORKFLOW_TYPES = ["email_followup", "meeting_summary", "crm_update",
+                  "lead_research", "calendar_scheduling", "document_processing"]
+FAILURE_REASONS= ["timeout", "api_error", "credit_exhausted",
+                  "invalid_input", "integration_failure"]
+CREDIT_COSTS   = {"email_followup": 10, "meeting_summary": 25,
+                  "crm_update": 15, "lead_research": 40,
+                  "calendar_scheduling": 8, "document_processing": 30}
+PLAN_CREDITS   = {"free": 400, "pro": 5000, "business": 15000}
 
-# ── Helpers ─────────────────────────────────────────────
-def rand_date(start_days_ago=90, end_days_ago=0):
-    delta = random.randint(end_days_ago, start_days_ago)
-    return datetime.now() - timedelta(days=delta)
+def rand_date(start=90, end=0):
+    return datetime.now() - timedelta(days=random.randint(end, start))
 
-# ── 1. Users ─────────────────────────────────────────────
 def gen_users():
     rows = []
     for i in range(1, NUM_USERS + 1):
-        plan   = random.choices(PLAN_TYPES, weights=[0.3, 0.5, 0.2])[0]
-        signup = rand_date(90, 30)
+        plan = random.choices(PLAN_TYPES, weights=[0.3, 0.5, 0.2])[0]
         rows.append({
-            "user_id":        f"u_{i:04d}",
-            "plan_type":      plan,
-            "monthly_credits": PLAN_CREDITS[plan],
-            "signup_date":    signup.strftime("%Y-%m-%d"),
-            "country":        random.choice(["US","UK","IN","CA","AU","DE"]),
+            "USER_ID":         f"u_{i:04d}",
+            "PLAN_TYPE":       plan,
+            "MONTHLY_CREDITS": PLAN_CREDITS[plan],
+            "SIGNUP_DATE":     rand_date(90, 30).strftime("%Y-%m-%d"),
+            "COUNTRY":         random.choice(["US","UK","IN","CA","AU","DE"]),
         })
     return pd.DataFrame(rows)
 
-# ── 2. Workflow events ────────────────────────────────────
 def gen_workflow_events(users):
-    rows = []
-    wf_id = 1
+    rows, wf_id = [], 1
     for _, u in users.iterrows():
-        n_workflows = random.randint(5, 80)
-        for _ in range(n_workflows):
-            wf_type   = random.choice(WORKFLOW_TYPES)
-            # pro/business users run more complex workflows → higher failure rate
-            fail_prob = 0.35 if u["plan_type"] == "free" else 0.25
-            success   = random.random() > fail_prob
-            steps     = random.randint(1, 6)
-            completed = steps if success else random.randint(1, steps)
+        for _ in range(random.randint(5, 80)):
+            wf_type = random.choice(WORKFLOW_TYPES)
+            success = random.random() > 0.25
+            steps   = random.randint(1, 6)
             rows.append({
-                "workflow_id":       f"wf_{wf_id:06d}",
-                "user_id":           u["user_id"],
-                "workflow_type":     wf_type,
-                "status":            "success" if success else "failed",
-                "steps_total":       steps,
-                "steps_completed":   completed,
-                "failure_reason":    None if success else random.choice(FAILURE_REASONS),
-                "created_at":        rand_date(90, 0).strftime("%Y-%m-%d %H:%M:%S"),
-                "duration_seconds":  random.randint(2, 120),
+                "WORKFLOW_ID":     f"wf_{wf_id:06d}",
+                "USER_ID":         u["USER_ID"],
+                "WORKFLOW_TYPE":   wf_type,
+                "STATUS":          "success" if success else "failed",
+                "STEPS_TOTAL":     steps,
+                "STEPS_COMPLETED": steps if success else random.randint(1, steps),
+                "FAILURE_REASON":  None if success else random.choice(FAILURE_REASONS),
+                "CREATED_AT":      rand_date(90, 0).strftime("%Y-%m-%d %H:%M:%S"),
+                "DURATION_SECONDS":random.randint(2, 120),
             })
             wf_id += 1
     return pd.DataFrame(rows)
 
-# ── 3. Credit transactions ────────────────────────────────
-def gen_credit_transactions(workflow_events):
+def gen_credit_transactions(wf):
     rows = []
-    tx_id = 1
-    for _, wf in workflow_events.iterrows():
-        base_cost    = CREDIT_COSTS[wf["workflow_type"]]
-        # failed workflows still burn credits (the core user complaint)
-        credits_used = base_cost if wf["status"] == "success" \
-                       else int(base_cost * random.uniform(0.4, 0.9))
+    for i, row in enumerate(wf.itertuples(), 1):
+        base = CREDIT_COSTS[row.WORKFLOW_TYPE]
         rows.append({
-            "transaction_id": f"tx_{tx_id:06d}",
-            "user_id":        wf["user_id"],
-            "workflow_id":    wf["workflow_id"],
-            "credits_used":   credits_used,
-            "workflow_type":  wf["workflow_type"],
-            "status":         wf["status"],
-            "created_at":     wf["created_at"],
+            "TRANSACTION_ID": f"tx_{i:06d}",
+            "USER_ID":        row.USER_ID,
+            "WORKFLOW_ID":    row.WORKFLOW_ID,
+            "CREDITS_USED":   base if row.STATUS == "success" else int(base * random.uniform(0.4, 0.9)),
+            "WORKFLOW_TYPE":  row.WORKFLOW_TYPE,
+            "STATUS":         row.STATUS,
+            "CREATED_AT":     row.CREATED_AT,
         })
-        tx_id += 1
     return pd.DataFrame(rows)
 
-# ── 4. Reviews ────────────────────────────────────────────
 def gen_reviews():
+    rows = []
     platforms  = ["trustpilot", "g2", "capterra", "app_store"]
     categories = ["billing", "reliability", "performance",
                   "ease_of_use", "customer_support", "pricing"]
-    sentiments = ["positive", "negative", "neutral"]
-    rows = []
     for i in range(1, 151):
-        platform   = random.choice(platforms)
-        # trustpilot skews negative, g2 skews positive (matches real data)
-        sentiment  = random.choices(
-            sentiments,
-            weights=[0.2, 0.6, 0.2] if platform == "trustpilot" else [0.7, 0.1, 0.2]
-        )[0]
+        platform  = random.choice(platforms)
+        sentiment = random.choices(
+            ["positive","negative","neutral"],
+            weights=[0.2,0.6,0.2] if platform=="trustpilot" else [0.7,0.1,0.2])[0]
         rows.append({
-            "review_id":       f"rv_{i:04d}",
-            "platform":        platform,
-            "rating":          random.randint(1, 3) if sentiment == "negative"
-                               else random.randint(4, 5),
-            "sentiment":       sentiment,
-            "complaint_category": random.choice(categories),
-            "plan_type":       random.choice(PLAN_TYPES),
-            "review_date":     rand_date(180, 0).strftime("%Y-%m-%d"),
+            "REVIEW_ID":          f"rv_{i:04d}",
+            "PLATFORM":           platform,
+            "RATING":             random.randint(1,3) if sentiment=="negative" else random.randint(4,5),
+            "SENTIMENT":          sentiment,
+            "COMPLAINT_CATEGORY": random.choice(categories),
+            "PLAN_TYPE":          random.choice(PLAN_TYPES),
+            "REVIEW_DATE":        rand_date(180, 0).strftime("%Y-%m-%d"),
         })
     return pd.DataFrame(rows)
 
-# ── Write to SQLite ───────────────────────────────────────
 def main():
-    conn = sqlite3.connect(DB)
+    print("Connecting to Snowflake...")
+    conn = snowflake.connector.connect(**SNOWFLAKE_CONFIG)
 
-    users    = gen_users()
-    wf       = gen_workflow_events(users)
-    credits  = gen_credit_transactions(wf)
-    reviews  = gen_reviews()
+    users = gen_users()
+    wf    = gen_workflow_events(users)
+    cr    = gen_credit_transactions(wf)
+    rv    = gen_reviews()
 
-    users.to_sql("raw_users",                con=conn, if_exists="replace", index=False)
-    wf.to_sql("raw_workflow_events",         con=conn, if_exists="replace", index=False)
-    credits.to_sql("raw_credit_transactions",con=conn, if_exists="replace", index=False)
-    reviews.to_sql("raw_reviews",            con=conn, if_exists="replace", index=False)
+    tables = [
+        ("RAW_USERS",                users),
+        ("RAW_WORKFLOW_EVENTS",      wf),
+        ("RAW_CREDIT_TRANSACTIONS",  cr),
+        ("RAW_REVIEWS",              rv),
+    ]
+
+    for name, df in tables:
+        print(f"Loading {name} ({len(df):,} rows)...")
+        conn.cursor().execute(f"DROP TABLE IF EXISTS LINDY_CREDIT_INTELLIGENCE.RAW.{name}")
+        success, chunks, rows, _ = write_pandas(
+            conn, df, name,
+            database="LINDY_CREDIT_INTELLIGENCE",
+            schema="RAW",
+            auto_create_table=True,
+            overwrite=True
+        )
+        print(f"  ✅ {name} — {rows:,} rows loaded")
 
     conn.close()
-
-    print(f"✅ Database created: {DB}")
-    print(f"   Users:               {len(users)}")
-    print(f"   Workflow events:     {len(wf)}")
-    print(f"   Credit transactions: {len(credits)}")
-    print(f"   Reviews:             {len(reviews)}")
+    print("\n✅ All tables loaded into Snowflake successfully!")
 
 if __name__ == "__main__":
     main()
