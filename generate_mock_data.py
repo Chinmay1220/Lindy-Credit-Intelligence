@@ -2,17 +2,20 @@ import snowflake.connector
 from snowflake.connector.pandas_tools import write_pandas
 import pandas as pd
 import random
+import toml
+import os
 from datetime import datetime, timedelta
 
 # ── Snowflake Config ─────────────────────────────────────
+secrets = toml.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard", "dashboard", ".streamlit", "secrets.toml"))
 SNOWFLAKE_CONFIG = {
-    "account":   "ZVIAMOM-IN09435",
-    "user":      "CSAW",
-    "password":  "Qwertasdfg@1469",
-    "role":      "ACCOUNTADMIN",
-    "warehouse": "COMPUTE_WH",
-    "database":  "LINDY_CREDIT_INTELLIGENCE",
-    "schema":    "RAW",
+    "account":   secrets["snowflake"]["account"],
+    "user":      secrets["snowflake"]["user"],
+    "password":  secrets["snowflake"]["password"],
+    "role":      secrets["snowflake"]["role"],
+    "warehouse": secrets["snowflake"]["warehouse"],
+    "database":  secrets["snowflake"]["database"],
+    "schema":    secrets["snowflake"]["schema"],
 }
 
 # ── Mock Data Config ─────────────────────────────────────
@@ -28,6 +31,9 @@ CREDIT_COSTS   = {"email_followup": 10, "meeting_summary": 25,
                   "crm_update": 15, "lead_research": 40,
                   "calendar_scheduling": 8, "document_processing": 30}
 PLAN_CREDITS   = {"free": 400, "pro": 5000, "business": 15000}
+
+# Failure rates by plan type — higher to surface more churn signals
+FAILURE_RATES  = {"free": 0.45, "pro": 0.35, "business": 0.25}
 
 def rand_date(start=90, end=0):
     return datetime.now() - timedelta(days=random.randint(end, start))
@@ -48,10 +54,17 @@ def gen_users():
 def gen_workflow_events(users):
     rows, wf_id = [], 1
     for _, u in users.iterrows():
-        for _ in range(random.randint(5, 80)):
-            wf_type = random.choice(WORKFLOW_TYPES)
-            success = random.random() > 0.25
-            steps   = random.randint(1, 6)
+        # More workflows for higher plan users — they use the product more
+        n_workflows = {
+            "free":     random.randint(20, 60),
+            "pro":      random.randint(40, 120),
+            "business": random.randint(60, 180),
+        }.get(u["PLAN_TYPE"], random.randint(20, 80))
+        for _ in range(n_workflows):
+            wf_type  = random.choice(WORKFLOW_TYPES)
+            fail_prob = FAILURE_RATES.get(u["PLAN_TYPE"], 0.35)
+            success  = random.random() > fail_prob
+            steps    = random.randint(1, 6)
             rows.append({
                 "WORKFLOW_ID":     f"wf_{wf_id:06d}",
                 "USER_ID":         u["USER_ID"],
