@@ -5,6 +5,7 @@ import streamlit as st
 import snowflake.connector
 from datetime import datetime, timedelta
 
+
 # ── Snowflake Config ─────────────────────────────────────
 SNOWFLAKE_CONFIG = {
     "account":   st.secrets["snowflake"]["account"],
@@ -74,8 +75,9 @@ def kpi(label, value, color="indigo", delta=None):
 def insight(text): st.markdown(f'<div class="insight-box">💡 {text}</div>', unsafe_allow_html=True)
 def takeaway(title, text): st.markdown(f'<div class="takeaway-box"><h4>📌 {title}</h4>{text}</div>', unsafe_allow_html=True)
 
+st.cache_data.clear()
 # ── Data loader ──────────────────────────────────────────
-@st.cache_data
+@st.cache_data(ttl=0)
 def load_raw():
     conn   = snowflake.connector.connect(**SNOWFLAKE_CONFIG)
     users  = pd.read_sql("select * from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_USERS", conn)
@@ -149,8 +151,8 @@ wf_failures = ev.groupby("user_id").agg(
 user_health = user_health.merge(wf_failures, on="user_id", how="left")
 user_health["failure_rate"] = (user_health["failed_wf"] / user_health["total_wf"].replace(0,1) * 100).round(2)
 user_health["churn_risk"] = user_health.apply(
-    lambda r: "High"   if r["pct_used"] > 80 and r["pct_wasted"] > 30
-    else      "Medium" if r["pct_used"] > 50 and r["pct_wasted"] > 20
+    lambda r: "High"   if r["pct_wasted"] > 25 and r["failure_rate"] > 25
+    else      "Medium" if r["pct_wasted"] > 15 and r["failure_rate"] > 15
     else      "Low", axis=1)
 user_health["monthly_revenue"] = user_health["plan_type"].map(PLAN_PRICE)
 high_risk_users = (user_health["churn_risk"]=="High").sum()
@@ -237,7 +239,7 @@ with t1:
 with t2:
     st.subheader("Which Workflows Fail Most — and Why?")
     st.caption("Workflow failures burn credits without delivering value. Understanding failure patterns helps engineering prioritize fixes that directly reduce churn.")
-    rel = ev.groupby(["workflow_type","failure_reason"]).agg(
+    rel = ev.groupby(["workflow_type","failure_reason"], dropna=False).agg(
         total_workflows=("workflow_id","count"),
         successful=("status", lambda x: (x=="success").sum()),
         failed=("status", lambda x: (x=="failed").sum()),
