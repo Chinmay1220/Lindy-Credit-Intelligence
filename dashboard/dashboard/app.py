@@ -121,6 +121,8 @@ with st.sidebar:
     days = date_options[selected_range]
     cutoff = pd.Timestamp(max_date) - timedelta(days=days)
     st.markdown("---")
+    st.markdown("Here's a 5-minute walkthrough of what I built : [HERE](https://drive.google.com/file/d/1q-f3wC5WJ0v3o4hI57wXgrGNMPO3bHUS/view?usp=drive_link)")
+    st.markdown("---")
     st.caption("This dashboard uses mock data simulating Lindy's internal product telemetry. Built to demonstrate what a data engineer would ship in week one.")
 
 # ── Apply date filter ────────────────────────────────────
