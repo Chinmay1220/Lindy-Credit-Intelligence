@@ -5,4 +5,6 @@ data/lindy_mock.db
 dbt_lindy/target/
 dbt_lindy/logs/
 .streamlit/secrets.toml
+dashboard/dashboard/.streamlit/secrets.toml
+dbt_lindy/profiles.yml
 logs/dbt.log
