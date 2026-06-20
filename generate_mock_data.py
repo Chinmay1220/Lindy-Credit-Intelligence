@@ -3,11 +3,20 @@ from snowflake.connector.pandas_tools import write_pandas
 import pandas as pd
 import random
 import toml
-import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 # ── Snowflake Config ─────────────────────────────────────
-secrets = toml.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard", "dashboard", ".streamlit", "secrets.toml"))
+ROOT_DIR = Path(__file__).resolve().parent
+SECRET_CANDIDATES = [
+    ROOT_DIR / ".streamlit" / "secrets.toml",
+    ROOT_DIR / "dashboard" / "dashboard" / ".streamlit" / "secrets.toml",
+]
+secret_path = next((path for path in SECRET_CANDIDATES if path.exists()), None)
+if not secret_path:
+    raise FileNotFoundError("Create .streamlit/secrets.toml with your Snowflake credentials.")
+
+secrets = toml.load(secret_path)
 SNOWFLAKE_CONFIG = {
     "account":   secrets["snowflake"]["account"],
     "user":      secrets["snowflake"]["user"],

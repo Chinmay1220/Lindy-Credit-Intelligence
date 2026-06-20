@@ -4,7 +4,33 @@
 >
 > **Built to demonstrate what a data engineer would ship in week one at Lindy.**
 
-🔗 **[Live Dashboard](https://lindy-credit-intelligence-59ygkdcvfhjwwg7rc5fy2m.streamlit.app)**
+**Live application:** [Open the Streamlit dashboard](https://lindy-credit-intelligence-59ygkdcvfhjwwg7rc5fy2m.streamlit.app)
+
+<p align="center">
+  <a href="https://lindy-credit-intelligence-59ygkdcvfhjwwg7rc5fy2m.streamlit.app">
+    <img src="docs/assets/lindy-streamlit-credit-consumption.png" alt="Lindy Credit Intelligence Streamlit dashboard" width="100%">
+  </a>
+</p>
+
+---
+
+## Dashboard Preview
+
+The Streamlit app is organized into five decision-focused tabs: credit burn, workflow health, cancellation risk, sentiment, and revenue.
+
+<table>
+  <tr>
+    <td width="50%"><strong>Credit Consumption</strong><br><img src="docs/assets/lindy-streamlit-credit-consumption.png" alt="Credit Consumption tab"></td>
+    <td width="50%"><strong>Workflow Reliability</strong><br><img src="docs/assets/lindy-streamlit-workflow-reliability.png" alt="Workflow Reliability tab"></td>
+  </tr>
+  <tr>
+    <td width="50%"><strong>Cancellation Risk</strong><br><img src="docs/assets/lindy-streamlit-cancellation-risk.png" alt="Cancellation Risk tab"></td>
+    <td width="50%"><strong>User Sentiment</strong><br><img src="docs/assets/lindy-streamlit-user-sentiment.png" alt="User Sentiment tab"></td>
+  </tr>
+  <tr>
+    <td colspan="2"><strong>Revenue Signals</strong><br><img src="docs/assets/lindy-streamlit-revenue-signals.png" alt="Revenue Signals tab"></td>
+  </tr>
+</table>
 
 ---
 
@@ -179,8 +205,8 @@ cd lindy-credit-intelligence
 pip install -r requirements.txt
 
 # Create secrets file
-mkdir -p dashboard/.streamlit
-cat > dashboard/.streamlit/secrets.toml << EOF
+mkdir -p .streamlit
+cat > .streamlit/secrets.toml << EOF
 [snowflake]
 account = "YOUR_ACCOUNT"
 user = "YOUR_USER"
@@ -200,7 +226,7 @@ py -3.12 -c "from dbt.cli.main import cli; cli()" run
 
 # Run dashboard
 cd ..
-py -3.12 -m streamlit run dashboard/app.py
+py -3.12 -m streamlit run dashboard/dashboard/app.py
 ```
 
 ---

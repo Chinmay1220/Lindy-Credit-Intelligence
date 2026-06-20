@@ -8,3 +8,6 @@ dbt_lindy/logs/
 dashboard/dashboard/.streamlit/secrets.toml
 dbt_lindy/profiles.yml
 logs/dbt.log
+.tmp-streamlit-chrome-profile/
+logs/streamlit_capture.*
+docs/assets/lindy-streamlit-debug.png

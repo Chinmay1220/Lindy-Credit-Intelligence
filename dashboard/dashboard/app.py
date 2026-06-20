@@ -3,19 +3,38 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 import snowflake.connector
+import sqlite3
 from datetime import datetime, timedelta
+from pathlib import Path
 
 
 # ── Snowflake Config ─────────────────────────────────────
-SNOWFLAKE_CONFIG = {
-    "account":   st.secrets["snowflake"]["account"],
-    "user":      st.secrets["snowflake"]["user"],
-    "password":  st.secrets["snowflake"]["password"],
-    "role":      st.secrets["snowflake"]["role"],
-    "warehouse": st.secrets["snowflake"]["warehouse"],
-    "database":  st.secrets["snowflake"]["database"],
-    "schema":    st.secrets["snowflake"]["schema"],
-}
+ROOT_DIR = Path(__file__).resolve().parents[2]
+LOCAL_DB_PATH = ROOT_DIR / "data" / "lindy_mock.db"
+
+
+def get_snowflake_config():
+    try:
+        snowflake_secrets = st.secrets["snowflake"]
+    except Exception:
+        return None
+
+    required = ["account", "user", "password", "role", "warehouse", "database", "schema"]
+    if any(not snowflake_secrets.get(key) for key in required):
+        return None
+
+    return {
+        "account":   snowflake_secrets["account"],
+        "user":      snowflake_secrets["user"],
+        "password":  snowflake_secrets["password"],
+        "role":      snowflake_secrets["role"],
+        "warehouse": snowflake_secrets["warehouse"],
+        "database":  snowflake_secrets["database"],
+        "schema":    snowflake_secrets["schema"],
+        "login_timeout": 8,
+        "network_timeout": 8,
+        "socket_timeout": 8,
+    }
 
 PLAN_PRICE = {"free": 0, "pro": 49.99, "business": 149.99}
 WORKFLOW_LABELS = {
@@ -77,20 +96,46 @@ def takeaway(title, text): st.markdown(f'<div class="takeaway-box"><h4>📌 {tit
 
 st.cache_data.clear()
 # ── Data loader ──────────────────────────────────────────
-@st.cache_data(ttl=0)
-def load_raw():
-    conn   = snowflake.connector.connect(**SNOWFLAKE_CONFIG)
-    users  = pd.read_sql("select * from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_USERS", conn)
-    events = pd.read_sql("select * from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_WORKFLOW_EVENTS", conn)
-    credits= pd.read_sql("select * from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_CREDIT_TRANSACTIONS", conn)
-    reviews= pd.read_sql("select * from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_REVIEWS", conn)
-    conn.close()
+def normalize_raw(users, events, credits, reviews):
     for df in [users, events, credits, reviews]:
         df.columns = df.columns.str.lower()
     events["created_at"]   = pd.to_datetime(events["created_at"])
     credits["created_at"]  = pd.to_datetime(credits["created_at"])
     reviews["review_date"] = pd.to_datetime(reviews["review_date"])
     return users, events, credits, reviews
+
+
+def load_from_sqlite():
+    if not LOCAL_DB_PATH.exists():
+        raise FileNotFoundError(f"Local mock database not found: {LOCAL_DB_PATH}")
+
+    with sqlite3.connect(LOCAL_DB_PATH) as conn:
+        users   = pd.read_sql_query("select * from raw_users", conn)
+        events  = pd.read_sql_query("select * from raw_workflow_events", conn)
+        credits = pd.read_sql_query("select * from raw_credit_transactions", conn)
+        reviews = pd.read_sql_query("select * from raw_reviews", conn)
+    return normalize_raw(users, events, credits, reviews)
+
+
+@st.cache_data(ttl=900, show_spinner="Loading dashboard data...")
+def load_raw():
+    snowflake_config = get_snowflake_config()
+    if snowflake_config:
+        try:
+            conn = snowflake.connector.connect(**snowflake_config)
+            try:
+                users   = pd.read_sql("select * from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_USERS", conn)
+                events  = pd.read_sql("select * from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_WORKFLOW_EVENTS", conn)
+                credits = pd.read_sql("select * from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_CREDIT_TRANSACTIONS", conn)
+                reviews = pd.read_sql("select * from LINDY_CREDIT_INTELLIGENCE.RAW.RAW_REVIEWS", conn)
+            finally:
+                conn.close()
+            return normalize_raw(users, events, credits, reviews)
+        except Exception:
+            # Keep the public demo responsive even when the warehouse is unavailable.
+            pass
+
+    return load_from_sqlite()
 
 users, events, credits, reviews = load_raw()
 
