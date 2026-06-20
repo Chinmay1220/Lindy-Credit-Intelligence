@@ -46,34 +46,38 @@ WORKFLOW_LABELS = {
     "document_processing": "Document Processing",
 }
 T = "plotly_dark"
+BLUE_SEQUENCE = ["#38bdf8", "#0ea5e9", "#3b82f6", "#2563eb", "#1d4ed8", "#1e40af"]
+BLUE_CONTINUOUS = ["#dbeafe", "#93c5fd", "#38bdf8", "#2563eb", "#172554"]
+BLUE_RISK = {"High": "#1d4ed8", "Medium": "#3b82f6", "Low": "#93c5fd"}
+BLUE_SENTIMENT = {"Positive": "#38bdf8", "Negative": "#2563eb", "Neutral": "#93c5fd"}
 
-st.set_page_config(page_title="Lindy Credit Intelligence", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Lindy Credit Intelligence", layout="wide")
 
 # ── CSS ──────────────────────────────────────────────────
 st.markdown("""
 <style>
-  .main { background:#0e1117; }
+  .main { background:#07111f; }
   .block-container { padding-top:1.5rem; }
   .kpi-card {
-      background:#1c1f26; border-radius:12px; padding:1.2rem 1.5rem;
-      border-left:4px solid #6366f1; margin-bottom:0.5rem;
+      background:#0f172a; border-radius:12px; padding:1.2rem 1.5rem;
+      border-left:4px solid #38bdf8; margin-bottom:0.5rem;
   }
-  .kpi-card.red   { border-left-color:#ef4444; }
-  .kpi-card.green { border-left-color:#22c55e; }
-  .kpi-card.amber { border-left-color:#f97316; }
-  .kpi-card.indigo{ border-left-color:#6366f1; }
-  .kpi-label { font-size:0.78rem; color:#9ca3af; margin-bottom:0.2rem; }
+  .kpi-card.red   { border-left-color:#2563eb; }
+  .kpi-card.green { border-left-color:#0ea5e9; }
+  .kpi-card.amber { border-left-color:#3b82f6; }
+  .kpi-card.indigo{ border-left-color:#38bdf8; }
+  .kpi-label { font-size:0.78rem; color:#bfdbfe; margin-bottom:0.2rem; }
   .kpi-value { font-size:1.8rem; font-weight:700; color:#f9fafb; }
   .kpi-delta { font-size:0.78rem; margin-top:0.2rem; }
   .insight-box {
-      background:#1e293b; border-left:4px solid #6366f1;
+      background:#0f2544; border-left:4px solid #38bdf8;
       border-radius:8px; padding:0.9rem 1.2rem; margin:0.8rem 0;
-      color:#cbd5e1; font-size:0.9rem;
+      color:#dbeafe; font-size:0.9rem;
   }
   .takeaway-box {
-      background:#172033; border:1px solid #334155;
+      background:#0b1f3a; border:1px solid #1d4ed8;
       border-radius:10px; padding:1rem 1.4rem; margin-top:1rem;
-      color:#94a3b8; font-size:0.88rem;
+      color:#bfdbfe; font-size:0.88rem;
   }
   .takeaway-box h4 { color:#e2e8f0; margin-bottom:0.4rem; }
   [data-testid="stMetricValue"] { font-size:1.8rem; font-weight:700; }
@@ -83,7 +87,7 @@ st.markdown("""
 
 # ── Helpers ──────────────────────────────────────────────
 def kpi(label, value, color="indigo", delta=None):
-    delta_html = f'<div class="kpi-delta" style="color:{"#22c55e" if "▲" in str(delta) else "#ef4444"}">{delta}</div>' if delta else ""
+    delta_html = f'<div class="kpi-delta" style="color:#93c5fd">{delta}</div>' if delta else ""
     st.markdown(f"""
     <div class="kpi-card {color}">
       <div class="kpi-label">{label}</div>
@@ -91,8 +95,8 @@ def kpi(label, value, color="indigo", delta=None):
       {delta_html}
     </div>""", unsafe_allow_html=True)
 
-def insight(text): st.markdown(f'<div class="insight-box">💡 {text}</div>', unsafe_allow_html=True)
-def takeaway(title, text): st.markdown(f'<div class="takeaway-box"><h4>📌 {title}</h4>{text}</div>', unsafe_allow_html=True)
+def insight(text): st.markdown(f'<div class="insight-box">{text}</div>', unsafe_allow_html=True)
+def takeaway(title, text): st.markdown(f'<div class="takeaway-box"><h4>{title}</h4>{text}</div>', unsafe_allow_html=True)
 
 st.cache_data.clear()
 # ── Data loader ──────────────────────────────────────────
@@ -141,7 +145,7 @@ users, events, credits, reviews = load_raw()
 
 # ── Sidebar ──────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## ⚡ Lindy Credit Intelligence")
+    st.markdown("## Lindy Credit Intelligence")
     st.markdown("---")
     st.markdown("**Built by**")
     st.markdown("### Chinmay Sawant")
@@ -205,7 +209,7 @@ user_health["monthly_revenue"] = user_health["plan_type"].map(PLAN_PRICE)
 high_risk_users = (user_health["churn_risk"]=="High").sum()
 
 # ── Header ───────────────────────────────────────────────
-st.markdown("# ⚡ Lindy Credit Intelligence")
+st.markdown("# Lindy Credit Intelligence")
 st.markdown("*A mock analytics pipeline surfacing credit consumption patterns, workflow reliability, churn risk, and revenue signals — built to demonstrate what a data engineer would ship in week one at Lindy.*")
 st.divider()
 
@@ -213,18 +217,18 @@ st.divider()
 c1, c2, c3, c4 = st.columns(4)
 with c1: kpi("Total Users",                  f"{total_users:,}", "indigo")
 with c2: kpi("Total Credits Consumed",       f"{total_credits:,.0f}", "indigo")
-with c3: kpi("Overall Credit Waste Rate",    f"{waste_rate:.1f}%", "red", "⚠️ 1 in 5 credits is wasted")
-with c4: kpi("High Cancellation Risk Users", f"{high_risk_users:,}", "red", f"▼ {high_risk_users/total_users*100:.1f}% of user base")
+with c3: kpi("Overall Credit Waste Rate",    f"{waste_rate:.1f}%", "red", "1 in 5 credits is wasted")
+with c4: kpi("High Cancellation Risk Users", f"{high_risk_users:,}", "red", f"{high_risk_users/total_users*100:.1f}% of user base")
 
 st.divider()
 
 # ── Tabs ─────────────────────────────────────────────────
 t1, t2, t3, t4, t5 = st.tabs([
-    "💳 Credit Consumption",
-    "🔧 Workflow Reliability",
-    "🚨 Cancellation Risk",
-    "⭐ User Sentiment",
-    "💰 Revenue Signals"
+    "Credit Consumption",
+    "Workflow Reliability",
+    "Cancellation Risk",
+    "User Sentiment",
+    "Revenue Signals"
 ])
 
 # TAB 1 — Credit Consumption
@@ -250,13 +254,14 @@ with t1:
         fig = px.bar(credit_by_wf, x="workflow_type_label", y="total_credits",
                      title="Total Credits Consumed by Workflow Type",
                      color="workflow_type_label", text_auto=True, template=T,
+                     color_discrete_sequence=BLUE_SEQUENCE,
                      labels={"workflow_type_label":"Workflow","total_credits":"Credits Consumed"})
         fig.update_layout(showlegend=False, xaxis_tickangle=-20)
         st.plotly_chart(fig, use_container_width=True)
     with col2:
         fig2 = px.bar(credit_by_wf, x="workflow_type_label", y="pct_wasted",
                       title="% of Credits Wasted per Workflow Type",
-                      color="pct_wasted", color_continuous_scale="Reds",
+                      color="pct_wasted", color_continuous_scale=BLUE_CONTINUOUS,
                       text_auto=True, template=T,
                       labels={"workflow_type_label":"Workflow","pct_wasted":"% Wasted"})
         fig2.update_layout(xaxis_tickangle=-20)
@@ -268,9 +273,9 @@ with t1:
         credits_consumed=("credits_used","sum"), credits_wasted=("wasted","sum")).reset_index()
     fig_trend = go.Figure()
     fig_trend.add_trace(go.Scatter(x=trend["date"], y=trend["credits_consumed"],
-        mode="lines", name="Credits Consumed", line=dict(color="#6366f1", width=2)))
+        mode="lines", name="Credits Consumed", line=dict(color="#38bdf8", width=2)))
     fig_trend.add_trace(go.Scatter(x=trend["date"], y=trend["credits_wasted"],
-        mode="lines", name="Credits Wasted", line=dict(color="#ef4444", width=2, dash="dot")))
+        mode="lines", name="Credits Wasted", line=dict(color="#2563eb", width=2, dash="dot")))
     fig_trend.update_layout(template=T, title="Daily Credit Consumption vs Waste",
         xaxis_title="Date", yaxis_title="Credits", legend=dict(orientation="h"))
     st.plotly_chart(fig_trend, use_container_width=True)
@@ -309,7 +314,7 @@ with t2:
     with col1:
         fig3 = px.bar(summary, x="workflow_type", y="success_rate",
                       title="Success Rate by Workflow Type (%)",
-                      color="success_rate", color_continuous_scale="RdYlGn",
+                      color="success_rate", color_continuous_scale=BLUE_CONTINUOUS,
                       text_auto=True, template=T,
                       labels={"workflow_type":"Workflow","success_rate":"Success Rate (%)"})
         fig3.update_layout(xaxis_tickangle=-20)
@@ -320,7 +325,8 @@ with t2:
         fail_reasons.columns = ["failure_reason","count"]
         fail_reasons["failure_reason"] = fail_reasons["failure_reason"].str.replace("_"," ").str.title()
         fig4 = px.pie(fail_reasons, names="failure_reason", values="count",
-                      title="What Causes Workflow Failures?", template=T)
+                      title="What Causes Workflow Failures?", template=T,
+                      color_discrete_sequence=BLUE_SEQUENCE)
         fig4.update_traces(textposition="inside", textinfo="percent+label")
         st.plotly_chart(fig4, use_container_width=True)
     st.markdown("### Workflow Failure Rate Trend Over Time")
@@ -332,9 +338,9 @@ with t2:
     fig_rt = px.line(daily_rel, x="date", y="failure_rate",
                      title="Daily Workflow Failure Rate (%)", template=T,
                      labels={"date":"Date","failure_rate":"Failure Rate (%)"})
-    fig_rt.update_traces(line_color="#ef4444", line_width=2)
+    fig_rt.update_traces(line_color="#2563eb", line_width=2)
     fig_rt.add_hline(y=daily_rel["failure_rate"].mean(), line_dash="dot",
-                     line_color="#9ca3af", annotation_text="Avg failure rate")
+                     line_color="#93c5fd", annotation_text="Avg failure rate")
     st.plotly_chart(fig_rt, use_container_width=True)
     takeaway("What This Means for Lindy",
         "Workflow failures aren't just a product problem — they're a revenue problem. Every failed run costs the user credits and delivers nothing. Without tracking failure rates by workflow type, the engineering team can't prioritize which fixes will have the biggest impact on retention.")
@@ -350,9 +356,9 @@ with t3:
     st.subheader("Which Users Are Most Likely to Cancel?")
     st.caption("Users who burn a high % of their monthly credits on failed workflows are the strongest churn signal. This model identifies them before they cancel.")
     c1,c2,c3 = st.columns(3)
-    with c1: kpi("🔴 High Cancellation Risk",   f"{(user_health['churn_risk']=='High').sum():,} users",   "red")
-    with c2: kpi("🟡 Medium Cancellation Risk", f"{(user_health['churn_risk']=='Medium').sum():,} users", "amber")
-    with c3: kpi("🟢 Low Cancellation Risk",    f"{(user_health['churn_risk']=='Low').sum():,} users",    "green")
+    with c1: kpi("High Cancellation Risk",   f"{(user_health['churn_risk']=='High').sum():,} users",   "red")
+    with c2: kpi("Medium Cancellation Risk", f"{(user_health['churn_risk']=='Medium').sum():,} users", "amber")
+    with c3: kpi("Low Cancellation Risk",    f"{(user_health['churn_risk']=='Low').sum():,} users",    "green")
     high_pro = user_health[(user_health["churn_risk"]=="High") & (user_health["plan_type"]=="pro")].shape[0]
     insight(f"<b>{high_pro} Pro plan users</b> are at high cancellation risk. At $49.99/month each, that's <b>${high_pro*49.99:,.0f}/month</b> in immediate revenue risk.")
     col1, col2 = st.columns(2)
@@ -362,7 +368,7 @@ with t3:
         fig5 = px.pie(risk_counts, names="churn_risk", values="count",
                       title="Cancellation Risk Distribution Across All Users",
                       color="churn_risk", template=T,
-                      color_discrete_map={"High":"#ef4444","Medium":"#f97316","Low":"#22c55e"})
+                      color_discrete_map=BLUE_RISK)
         fig5.update_traces(textposition="inside", textinfo="percent+label")
         st.plotly_chart(fig5, use_container_width=True)
     with col2:
@@ -373,7 +379,7 @@ with t3:
                           labels={"pct_used":"% of Monthly Credits Used",
                                   "pct_wasted":"% of Credits Wasted on Failures",
                                   "churn_risk":"Cancellation Risk"},
-                          color_discrete_map={"High":"#ef4444","Medium":"#f97316","Low":"#22c55e"})
+                          color_discrete_map=BLUE_RISK)
         st.plotly_chart(fig6, use_container_width=True)
     st.markdown("### Churn Risk Trend")
     cr_daily = cr.merge(users, on="user_id")
@@ -385,7 +391,7 @@ with t3:
     fig_ct = px.area(daily_waste, x="date", y="waste_rate",
                      title="Daily Credit Waste Rate Trend (%)", template=T,
                      labels={"date":"Date","waste_rate":"Waste Rate (%)"})
-    fig_ct.update_traces(line_color="#ef4444", fillcolor="rgba(239,68,68,0.15)")
+    fig_ct.update_traces(line_color="#2563eb", fillcolor="rgba(37,99,235,0.18)")
     st.plotly_chart(fig_ct, use_container_width=True)
     takeaway("What This Means for Lindy",
         "Churn doesn't happen overnight — it's a pattern. Users who consistently burn credits on failed workflows lose trust in the product before they cancel. Identifying these users 2-3 weeks early creates an intervention window: a credit refund, a support outreach, or a product fix can save the account.")
@@ -413,6 +419,7 @@ with t4:
         fig7 = px.bar(avg_by_platform, x="platform", y="avg_rating",
                       title="Average Star Rating by Review Platform",
                       color="platform", text_auto=True, template=T,
+                      color_discrete_sequence=BLUE_SEQUENCE,
                       labels={"platform":"Platform","avg_rating":"Average Rating (★)"})
         fig7.update_layout(showlegend=False, yaxis_range=[0,5])
         st.plotly_chart(fig7, use_container_width=True)
@@ -425,7 +432,7 @@ with t4:
         fig8 = px.bar(sent_agg, x="platform", y="count", color="sentiment", barmode="group",
                       title="Positive vs Negative Reviews by Platform", template=T,
                       labels={"platform":"Platform","count":"Number of Reviews","sentiment":"Sentiment"},
-                      color_discrete_map={"Positive":"#22c55e","Negative":"#ef4444","Neutral":"#9ca3af"})
+                      color_discrete_map=BLUE_SENTIMENT)
         st.plotly_chart(fig8, use_container_width=True)
     st.markdown("### Sentiment Trend Over Time")
     rv["month"] = pd.to_datetime(rv["review_date"]).dt.to_period("M").astype(str)
@@ -434,7 +441,7 @@ with t4:
     fig_st = px.line(sent_trend, x="month", y="review_id", color="sentiment",
                      title="Monthly Review Volume by Sentiment", template=T,
                      labels={"month":"Month","review_id":"Number of Reviews","sentiment":"Sentiment"},
-                     color_discrete_map={"Positive":"#22c55e","Negative":"#ef4444","Neutral":"#9ca3af"})
+                     color_discrete_map=BLUE_SENTIMENT)
     st.plotly_chart(fig_st, use_container_width=True)
     takeaway("What This Means for Lindy",
         "The G2 vs Trustpilot rating gap tells a clear story: power users love Lindy, everyday users struggle with it. Closing this gap requires fixing the credit transparency problem — not just the product.")
@@ -445,6 +452,7 @@ with t4:
     fig9 = px.bar(comp, x="complaint_category", y="review_id",
                   title="Volume of Reviews by Complaint Category",
                   color="complaint_category", text_auto=True, template=T,
+                  color_discrete_sequence=BLUE_SEQUENCE,
                   labels={"complaint_category":"Category","review_id":"Reviews"})
     fig9.update_layout(showlegend=False)
     st.plotly_chart(fig9, use_container_width=True)
@@ -459,9 +467,9 @@ with t5:
     c1,c2,c3 = st.columns(3)
     with c1: kpi("Estimated Monthly Revenue",    f"${total_mrr:,.0f}", "green")
     with c2: kpi("Revenue at Risk (High Churn)", f"${at_risk_rev:,.0f}", "red",
-                 f"▼ {at_risk_rev/total_mrr*100:.1f}% of MRR" if total_mrr>0 else "")
+                 f"{at_risk_rev/total_mrr*100:.1f}% of MRR" if total_mrr>0 else "")
     with c3: kpi("Free Users Ready to Upgrade",  f"{upgrade_cands:,} users", "amber",
-                 f"▲ ${upgrade_cands*49.99:,.0f} potential MRR")
+                 f"${upgrade_cands*49.99:,.0f} potential MRR")
     insight(f"If just <b>50% of upgrade-ready free users</b> convert to Pro, that's <b>${upgrade_cands*0.5*49.99:,.0f}/month</b> in new revenue — with zero new user acquisition needed.")
     col1, col2 = st.columns(2)
     with col1:
@@ -469,7 +477,7 @@ with t5:
         rev_plan["plan_type"] = rev_plan["plan_type"].str.title()
         fig10 = px.pie(rev_plan, names="plan_type", values="monthly_revenue",
                        title="Monthly Revenue Contribution by Plan", template=T,
-                       color_discrete_sequence=["#6366f1","#22c55e","#f97316"])
+                       color_discrete_sequence=BLUE_SEQUENCE)
         fig10.update_traces(textposition="inside", textinfo="percent+label")
         st.plotly_chart(fig10, use_container_width=True)
     with col2:
@@ -482,7 +490,8 @@ with t5:
         funnel = funnel.sort_values("Credit Usage")
         fig11 = px.bar(funnel, x="Credit Usage", y="Free Users",
                        title="Free Trial Conversion Funnel — Credit Usage Buckets",
-                       color="Credit Usage", text_auto=True, template=T)
+                       color="Credit Usage", text_auto=True, template=T,
+                       color_discrete_sequence=BLUE_SEQUENCE)
         fig11.update_layout(showlegend=False)
         st.plotly_chart(fig11, use_container_width=True)
     st.markdown("### Monthly Revenue at Risk Trend")
@@ -495,7 +504,7 @@ with t5:
     fig12 = px.area(rev_trend, x="month", y="revenue_at_risk",
                     title="Estimated Monthly Revenue at Risk from Credit Waste", template=T,
                     labels={"month":"Month","revenue_at_risk":"Revenue at Risk ($)"})
-    fig12.update_traces(line_color="#ef4444", fillcolor="rgba(239,68,68,0.15)")
+    fig12.update_traces(line_color="#2563eb", fillcolor="rgba(37,99,235,0.18)")
     st.plotly_chart(fig12, use_container_width=True)
     takeaway("What This Means for Lindy",
         "Revenue at risk isn't a future problem — it's happening now. High-churn users represent real MRR that can be saved with proactive intervention. Free users hitting their credit ceiling are the highest-probability upgrade candidates in the funnel.")
