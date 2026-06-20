@@ -45,7 +45,7 @@ WORKFLOW_LABELS = {
     "calendar_scheduling": "Calendar Scheduling",
     "document_processing": "Document Processing",
 }
-T = "plotly_dark"
+T = "plotly_white"
 BLUE_SEQUENCE = ["#38bdf8", "#0ea5e9", "#3b82f6", "#2563eb", "#1d4ed8", "#1e40af"]
 BLUE_CONTINUOUS = ["#dbeafe", "#93c5fd", "#38bdf8", "#2563eb", "#172554"]
 BLUE_RISK = {"High": "#1d4ed8", "Medium": "#3b82f6", "Low": "#93c5fd"}
@@ -56,30 +56,31 @@ st.set_page_config(page_title="Lindy Credit Intelligence", layout="wide")
 # ── CSS ──────────────────────────────────────────────────
 st.markdown("""
 <style>
-  .main { background:#07111f; }
+  .stApp, .main { background:#ffffff; color:#0f172a; }
   .block-container { padding-top:1.5rem; }
   .kpi-card {
-      background:#0f172a; border-radius:12px; padding:1.2rem 1.5rem;
+      background:#f8fbff; border:1px solid #dbeafe;
+      border-radius:12px; padding:1.2rem 1.5rem;
       border-left:4px solid #38bdf8; margin-bottom:0.5rem;
   }
   .kpi-card.red   { border-left-color:#2563eb; }
   .kpi-card.green { border-left-color:#0ea5e9; }
   .kpi-card.amber { border-left-color:#3b82f6; }
   .kpi-card.indigo{ border-left-color:#38bdf8; }
-  .kpi-label { font-size:0.78rem; color:#bfdbfe; margin-bottom:0.2rem; }
-  .kpi-value { font-size:1.8rem; font-weight:700; color:#f9fafb; }
+  .kpi-label { font-size:0.78rem; color:#1d4ed8; margin-bottom:0.2rem; }
+  .kpi-value { font-size:1.8rem; font-weight:700; color:#0f172a; }
   .kpi-delta { font-size:0.78rem; margin-top:0.2rem; }
   .insight-box {
-      background:#0f2544; border-left:4px solid #38bdf8;
+      background:#eff6ff; border-left:4px solid #2563eb;
       border-radius:8px; padding:0.9rem 1.2rem; margin:0.8rem 0;
-      color:#dbeafe; font-size:0.9rem;
+      color:#0f172a; font-size:0.9rem;
   }
   .takeaway-box {
-      background:#0b1f3a; border:1px solid #1d4ed8;
+      background:#f8fbff; border:1px solid #bfdbfe;
       border-radius:10px; padding:1rem 1.4rem; margin-top:1rem;
-      color:#bfdbfe; font-size:0.88rem;
+      color:#334155; font-size:0.88rem;
   }
-  .takeaway-box h4 { color:#e2e8f0; margin-bottom:0.4rem; }
+  .takeaway-box h4 { color:#0f172a; margin-bottom:0.4rem; }
   [data-testid="stMetricValue"] { font-size:1.8rem; font-weight:700; }
   .stTabs [data-baseweb="tab"] { font-size:0.92rem; font-weight:600; }
 </style>
